@@ -2,12 +2,12 @@ const CACHE_NAME = 'dodo-audio-v1';
 
 // Files to cache on install (app shell)
 const PRECACHE_URLS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/favicon.ico',
-  '/assets/icon.png',
-  '/assets/favicon.png',
+  '/DodoAudio/',
+  '/DodoAudio/index.html',
+  '/DodoAudio/manifest.json',
+  '/DodoAudio/favicon.ico',
+  '/DodoAudio/assets/icon.png',
+  '/DodoAudio/assets/favicon.png',
 ];
 
 self.addEventListener('install', (event) => {
@@ -35,7 +35,7 @@ self.addEventListener('fetch', (event) => {
   // For navigation requests: serve index.html from cache (SPA fallback)
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      caches.match('/index.html').then((cached) => cached || fetch(event.request))
+      caches.match('/DodoAudio/index.html').then((cached) => cached || fetch(event.request))
     );
     return;
   }

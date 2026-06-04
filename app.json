@@ -62,6 +62,9 @@
         "projectId": "a52132e3-7b24-4c1b-9315-46625e580b8a"
       }
     },
+    "experiments": {
+      "baseUrl": "/DodoAudio"
+    },
     "owner": "abacus.ai"
   }
 }
