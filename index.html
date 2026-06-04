@@ -40,7 +40,26 @@
       You need to enable JavaScript to run this app.
     </noscript>
     <!-- The root element for your Expo app. -->
-    <div id="root"></div>
+    <div id="root">
+      <div id="boot-fallback" style="color:#fff;background:#0A0A0A;padding:32px;font-family:system-ui,sans-serif;height:100vh;box-sizing:border-box">
+        <h2 style="color:#3B82F6">Dodo Audio</h2>
+        <p>Chargement en cours...</p>
+        <p style="color:#9CA3AF;font-size:13px">Si ce message reste, React n'a pas pu monter l'application.</p>
+        <div id="boot-status" style="color:#f87171;font-family:monospace;font-size:12px;white-space:pre-wrap;margin-top:16px"></div>
+      </div>
+    </div>
+    <script>
+      // Vérifie si React a remplacé le fallback après 5 secondes
+      setTimeout(function() {
+        var fb = document.getElementById('boot-fallback');
+        if (fb) {
+          var s = document.getElementById('boot-status');
+          if (s) {
+            s.textContent = 'REACT N\'A PAS MONTÉ après 5s. Le bundle JS s\'exécute mais ne rend rien.\n\nVérifie l\'onglet Console pour des warnings/errors et l\'onglet Network pour des 404.';
+          }
+        }
+      }, 5000);
+    </script>
   <script>
     window.onerror = function(msg, src, line, col, err) {
       document.getElementById('root').innerHTML =

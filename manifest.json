@@ -2,22 +2,18 @@
   "name": "Dodo Audio",
   "short_name": "Dodo Audio",
   "description": "Lecteur audio pour s'endormir",
-  "start_url": "/",
+  "start_url": "/DodoAudio/",
+  "scope": "/DodoAudio/",
   "display": "standalone",
-  "background_color": "#0f1117",
+  "background_color": "#0A0A0A",
   "theme_color": "#3B82F6",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/assets/icon.png",
+      "src": "/DodoAudio/assets/icon.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
-    },
-    {
-      "src": "/assets/favicon.png",
-      "sizes": "64x64",
-      "type": "image/png"
     }
   ]
 }
