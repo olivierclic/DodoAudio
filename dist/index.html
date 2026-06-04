@@ -41,6 +41,19 @@
     </noscript>
     <!-- The root element for your Expo app. -->
     <div id="root"></div>
+  <script>
+    window.onerror = function(msg, src, line, col, err) {
+      document.getElementById('root').innerHTML =
+        '<div style="color:#f87171;background:#1a1a2e;padding:24px;font-family:monospace;white-space:pre-wrap">' +
+        '<b>ERREUR JS :</b>\n' + msg + '\n\nSource: ' + src + '\nLigne: ' + line +
+        (err && err.stack ? '\n\nStack:\n' + err.stack : '') + '</div>';
+    };
+    window.addEventListener('unhandledrejection', function(e) {
+      document.getElementById('root').innerHTML =
+        '<div style="color:#f87171;background:#1a1a2e;padding:24px;font-family:monospace;white-space:pre-wrap">' +
+        '<b>PROMISE REJETÉE :</b>\n' + (e.reason && e.reason.stack ? e.reason.stack : String(e.reason)) + '</div>';
+    });
+  </script>
   <script src="/DodoAudio/_expo/static/js/web/entry-1cd7d3dbb266b85f2b16f07e6794f1f1.js" defer></script>
   <script>
     if ('serviceWorker' in navigator) {
