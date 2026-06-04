@@ -1,7 +1,6 @@
-const CACHE_NAME = 'dodo-audio-v2';
+const CACHE_NAME = 'dodo-audio-v3';
 const BASE = '/DodoAudio';
 
-// Files to precache on install (minimum app shell)
 const PRECACHE_URLS = [
   BASE + '/',
   BASE + '/index.html',
@@ -14,9 +13,7 @@ const PRECACHE_URLS = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) =>
-      Promise.all(PRECACHE_URLS.map((url) =>
-        cache.add(url).catch(() => null)
-      ))
+      Promise.all(PRECACHE_URLS.map((url) => cache.add(url).catch(() => null)))
     )
   );
   self.skipWaiting();
@@ -24,30 +21,25 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
-    ).then(() => self.clients.claim())
+    caches.keys()
+      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))))
+      .then(() => self.clients.claim())
   );
 });
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
-
   const url = new URL(event.request.url);
 
-  // Navigation: serve cached index.html when offline (SPA shell)
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request).catch(() =>
-        caches.match(BASE + '/index.html').then((cached) =>
-          cached || new Response('Offline', { status: 503 })
-        )
+        caches.match(BASE + '/index.html').then((cached) => cached || new Response('Offline', { status: 503 }))
       )
     );
     return;
   }
 
-  // Cache-first for static assets within our app
   if (url.pathname.startsWith(BASE + '/')) {
     event.respondWith(
       caches.match(event.request).then((cached) => {
