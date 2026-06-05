@@ -8,15 +8,17 @@ import {
   ScrollView,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import Constants from 'expo-constants';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSettings } from '../../contexts/SettingsContext';
 import { Colors, Spacing, BorderRadius } from '../../constants/theme';
+import { APP_VERSION } from '../../constants/version';
 
-const SPEED_OPTIONS = [0.8, 1.0];
-
-const APP_VERSION = Constants.expoConfig?.version ?? '0.0.0';
+// 0.80, 0.82, 0.84, ..., 1.00 — 11 speed options in 0.02 increments
+const SPEED_OPTIONS: number[] = Array.from(
+  { length: 11 },
+  (_, i) => Math.round((0.8 + i * 0.02) * 100) / 100,
+);
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
@@ -56,17 +58,17 @@ export default function SettingsScreen() {
         {SPEED_OPTIONS.map((s) => (
           <Pressable
             key={s}
-            style={[styles.chip, playbackSpeed === s && styles.chipActive]}
+            style={[styles.chip, Math.abs(playbackSpeed - s) < 0.001 && styles.chipActive]}
             onPress={() => setPlaybackSpeed(s)}
-            accessibilityLabel={`Vitesse ${s.toFixed(1)}x`}
+            accessibilityLabel={`Vitesse ${s.toFixed(2)}x`}
           >
             <Text
               style={[
                 styles.chipText,
-                playbackSpeed === s && styles.chipTextActive,
+                Math.abs(playbackSpeed - s) < 0.001 && styles.chipTextActive,
               ]}
             >
-              {s.toFixed(1)}x
+              {s.toFixed(2)}x
             </Text>
           </Pressable>
         ))}

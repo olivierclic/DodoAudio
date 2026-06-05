@@ -101,46 +101,48 @@ export default function PlayerScreen() {
         </Text>
       ) : null}
 
-      {/* Playback Controls */}
+      {/* Playback Controls — restart at far left, [rewind, play, forward] centered */}
       <View style={styles.controlsRow}>
         <Pressable
           onPress={() => seekTo(0)}
           disabled={!hasTrack}
-          style={styles.controlBtn}
+          style={styles.restartBtn}
           accessibilityLabel="Recommencer depuis le début"
         >
           <Ionicons name="play-skip-back" size={28} color={hasTrack ? Colors.textSecondary : Colors.surface} />
         </Pressable>
 
-        <Pressable
-          onPress={() => skipBack()}
-          disabled={!hasTrack}
-          style={styles.controlBtn}
-          accessibilityLabel="Reculer de 30 secondes"
-        >
-          <MaterialCommunityIcons name="rewind-30" size={32} color={hasTrack ? Colors.textPrimary : Colors.surface} />
-        </Pressable>
+        <View style={styles.centerControls}>
+          <Pressable
+            onPress={() => skipBack()}
+            disabled={!hasTrack}
+            style={styles.controlBtn}
+            accessibilityLabel="Reculer de 30 secondes"
+          >
+            <MaterialCommunityIcons name="rewind-30" size={32} color={hasTrack ? Colors.textPrimary : Colors.surface} />
+          </Pressable>
 
-        <Pressable
-          onPress={togglePlayPause}
-          disabled={!hasTrack}
-          style={[
-            styles.playBtn,
-            { backgroundColor: hasTrack ? Colors.primary : Colors.surface },
-          ]}
-          accessibilityLabel={isPlaying ? 'Pause' : 'Lecture'}
-        >
-          <Ionicons name={isPlaying ? 'pause' : 'play'} size={32} color="#fff" />
-        </Pressable>
+          <Pressable
+            onPress={togglePlayPause}
+            disabled={!hasTrack}
+            style={[
+              styles.playBtn,
+              { backgroundColor: hasTrack ? Colors.primary : Colors.surface },
+            ]}
+            accessibilityLabel={isPlaying ? 'Pause' : 'Lecture'}
+          >
+            <Ionicons name={isPlaying ? 'pause' : 'play'} size={32} color="#fff" />
+          </Pressable>
 
-        <Pressable
-          onPress={() => skipForward()}
-          disabled={!hasTrack}
-          style={styles.controlBtn}
-          accessibilityLabel="Avancer de 30 secondes"
-        >
-          <MaterialCommunityIcons name="fast-forward-30" size={32} color={hasTrack ? Colors.textPrimary : Colors.surface} />
-        </Pressable>
+          <Pressable
+            onPress={() => skipForward()}
+            disabled={!hasTrack}
+            style={styles.controlBtn}
+            accessibilityLabel="Avancer de 30 secondes"
+          >
+            <MaterialCommunityIcons name="fast-forward-30" size={32} color={hasTrack ? Colors.textPrimary : Colors.surface} />
+          </Pressable>
+        </View>
       </View>
 
       {/* Progress Bar */}
@@ -257,11 +259,28 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
   },
   controlsRow: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+    position: 'relative',
+  },
+  restartBtn: {
+    position: 'absolute',
+    left: 0,
+    padding: Spacing.sm,
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
+  },
+  centerControls: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.lg,
-    marginBottom: Spacing.md,
   },
   controlBtn: {
     padding: Spacing.sm,
