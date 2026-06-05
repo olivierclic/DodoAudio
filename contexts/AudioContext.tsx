@@ -13,12 +13,26 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS } from '../constants/storage';
 import { useSettings } from './SettingsContext';
 import { isIdbUri, resolveToBlobUrl } from '../services/fileStore';
+import { WebAudioSound } from '../services/webAudioPlayer';
 
 async function resolvePlayableUri(uri: string): Promise<string | null> {
   if (Platform.OS === 'web' && isIdbUri(uri)) {
     return await resolveToBlobUrl(uri);
   }
   return uri;
+}
+
+// Unified factory: WebAudio on browsers (real seek + volume on iOS Safari),
+// expo-av on native.
+async function createPlayableSound(
+  uri: string,
+  initialStatus: any,
+  onStatus: (s: AVPlaybackStatus) => void
+) {
+  if (Platform.OS === 'web') {
+    return await WebAudioSound.createAsync({ uri }, initialStatus, onStatus as any);
+  }
+  return await Audio.Sound.createAsync({ uri }, initialStatus, onStatus);
 }
 
 let MediaControl: any = null;
@@ -325,8 +339,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         console.warn('Track URI cannot be resolved:', track.uri);
         return;
       }
-      const { sound } = await Audio.Sound.createAsync(
-        { uri: playableUri },
+      const { sound } = await createPlayableSound(
+        playableUri,
         {
           shouldPlay: autoPlay,
           positionMillis: initialPosition,
@@ -336,7 +350,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         },
         onPlaybackStatusUpdate
       );
-      soundRef.current = sound;
+      soundRef.current = sound as any;
       setCurrentTrack(track);
       setPositionMs(initialPosition);
       if (autoPlay) {
@@ -425,8 +439,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         console.warn('Track URI cannot be resolved:', track.uri);
         return;
       }
-      const { sound } = await Audio.Sound.createAsync(
-        { uri: playableUri },
+      const { sound } = await createPlayableSound(
+        playableUri,
         {
           shouldPlay: autoPlay,
           positionMillis: 0,
@@ -436,7 +450,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         },
         onPlaybackStatusUpdate
       );
-      soundRef.current = sound;
+      soundRef.current = sound as any;
       setCurrentTrack(track);
       setPositionMs(0);
       if (autoPlay) {

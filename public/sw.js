@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dodo-audio-v9';
+const CACHE_NAME = 'dodo-audio-v10';
 const BASE = '/DodoAudio';
 
 const PRECACHE_URLS = [
