@@ -112,12 +112,16 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const currentTrackRef = useRef<Track | null>(null);
   const playlistRef = useRef<Track[]>([]);
   const mediaListenerRef = useRef<(() => void) | null>(null);
+  const sleepTimerRemainingRef = useRef(0);
+  const sleepTimerDurationRef = useRef(15);
 
   // Keep refs in sync
   useEffect(() => { isPlayingRef.current = isPlaying; }, [isPlaying]);
   useEffect(() => { positionRef.current = positionMs; }, [positionMs]);
   useEffect(() => { currentTrackRef.current = currentTrack; }, [currentTrack]);
   useEffect(() => { playlistRef.current = playlist; }, [playlist]);
+  useEffect(() => { sleepTimerRemainingRef.current = sleepTimerRemaining; }, [sleepTimerRemaining]);
+  useEffect(() => { sleepTimerDurationRef.current = sleepTimerDuration; }, [sleepTimerDuration]);
 
   // Configure audio mode
   useEffect(() => {
@@ -361,12 +365,16 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
   const play = useCallback(async () => {
     try {
-      await soundRef.current?.playAsync?.();
-      if (sleepTimerRemaining <= 0) {
-        setSleepTimerRemaining(sleepTimerDuration * 60);
+      // If timer expired, restart it with the last selected duration BEFORE
+      // resuming playback. This way the lock-screen/BT 'play' button always
+      // gives the user a fresh sleep window.
+      if (sleepTimerRemainingRef.current <= 0) {
+        const duration = sleepTimerDurationRef.current || 15;
+        setSleepTimerRemaining(duration * 60);
       }
+      await soundRef.current?.playAsync?.();
     } catch {}
-  }, [sleepTimerRemaining, sleepTimerDuration]);
+  }, []);
 
   const pause = useCallback(async () => {
     try {
