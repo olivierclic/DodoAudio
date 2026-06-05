@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Dodo Audio</title>
+  <script>
+    // SPA fallback: redirect 404s back to index.html with the path encoded
+    (function() {
+      var base = '/DodoAudio';
+      var l = window.location;
+      var path = l.pathname;
+      if (path.indexOf(base) === 0) path = path.slice(base.length);
+      var url = l.protocol + '//' + l.host + base + '/?p=' + encodeURIComponent(path) +
+                (l.search ? '&q=' + encodeURIComponent(l.search.slice(1)) : '') +
+                l.hash;
+      l.replace(url);
+    })();
+  </script>
+</head>
+<body>Redirection...</body>
+</html>

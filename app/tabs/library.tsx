@@ -19,6 +19,7 @@ import { useAudio, Track } from '../../contexts/AudioContext';
 import { Colors, Spacing, BorderRadius } from '../../constants/theme';
 import { STORAGE_KEYS } from '../../constants/storage';
 import { extractMetadata } from '../../services/metadata';
+import { saveFile, deleteFile, isIdbUri } from '../../services/fileStore';
 
 export default function LibraryScreen() {
   const insets = useSafeAreaInsets();
@@ -31,15 +32,22 @@ export default function LibraryScreen() {
     setTracks(playlist ?? []);
   }, [playlist]);
 
-  // Reload from storage on mount
+  // Reload from storage on mount. On web, drop tracks whose URIs are stale
+  // (blob: URIs that don't survive a page reload).
   useEffect(() => {
     (async () => {
       try {
         const raw = await AsyncStorage.getItem(STORAGE_KEYS.LIBRARY);
-        if (raw) {
-          const lib = JSON.parse(raw) ?? [];
-          setTracks(lib);
-          setPlaylist(lib);
+        if (!raw) return;
+        const lib: Track[] = JSON.parse(raw) ?? [];
+        const valid =
+          Platform.OS === 'web'
+            ? lib.filter((t) => t?.uri && !t.uri.startsWith('blob:'))
+            : lib;
+        setTracks(valid);
+        setPlaylist(valid);
+        if (valid.length !== lib.length) {
+          AsyncStorage.setItem(STORAGE_KEYS.LIBRARY, JSON.stringify(valid)).catch(() => {});
         }
       } catch {}
     })();
@@ -62,10 +70,23 @@ export default function LibraryScreen() {
 
       const newTracks: Track[] = [];
       for (const asset of assets) {
-        const uri = asset?.uri ?? '';
+        const pickedUri = asset?.uri ?? '';
+        const file = (asset as any)?.file as File | undefined;
         const fileName = asset?.name ?? 'Fichier inconnu';
-        // Extract ID3 metadata including artwork
-        const meta = await extractMetadata(uri);
+        // Extract ID3 metadata including artwork (pass File for web reliability)
+        const meta = await extractMetadata(pickedUri, file);
+
+        // On web, persist the Blob in IndexedDB so the track survives reloads.
+        let uri = pickedUri;
+        if (Platform.OS === 'web') {
+          try {
+            const blob: Blob | null = file ?? (pickedUri ? await (await fetch(pickedUri)).blob() : null);
+            if (blob) uri = await saveFile(blob);
+          } catch (err) {
+            console.warn('IDB save failed, falling back to blob URL:', err);
+          }
+        }
+
         newTracks.push({
           uri,
           name: meta.title || fileName.replace(/\.[^/.]+$/, ''),
@@ -92,6 +113,9 @@ export default function LibraryScreen() {
 
   const deleteTrack = useCallback((uri: string) => {
     const doDelete = () => {
+      if (Platform.OS === 'web' && isIdbUri(uri)) {
+        deleteFile(uri).catch(() => {});
+      }
       setTracks((prev) => {
         const updated = (prev ?? []).filter((t) => t?.uri !== uri);
         AsyncStorage.setItem(STORAGE_KEYS.LIBRARY, JSON.stringify(updated)).catch(() => {});

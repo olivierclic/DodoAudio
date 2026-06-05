@@ -16,7 +16,7 @@ import { useAudio } from '../../contexts/AudioContext';
 import { useSettings } from '../../contexts/SettingsContext';
 import { Colors, Spacing, BorderRadius } from '../../constants/theme';
 
-const TIMER_OPTIONS = [10, 15, 20, 25, 30];
+const TIMER_OPTIONS = [5, 10, 15, 20, 25, 30, 45, 60];
 
 function formatTime(ms: number): string {
   const totalSec = Math.floor((ms ?? 0) / 1000);
@@ -45,8 +45,6 @@ export default function PlayerScreen() {
     seekTo,
     skipForward,
     skipBack,
-    nextTrack,
-    prevTrack,
     setSleepTimer,
   } = useAudio();
   const { defaultArtworkUri } = useSettings();
@@ -97,17 +95,19 @@ export default function PlayerScreen() {
       <Text style={styles.trackTitle} numberOfLines={1}>
         {currentTrack?.name ?? 'Aucune piste sélectionnée'}
       </Text>
-      <Text style={styles.trackArtist} numberOfLines={1}>
-        {hasTrack ? (currentTrack?.artist ?? 'Artiste inconnu') : 'Sélectionnez un fichier dans la bibliothèque'}
-      </Text>
+      {!hasTrack ? (
+        <Text style={styles.trackHint} numberOfLines={1}>
+          Sélectionnez un fichier dans la bibliothèque
+        </Text>
+      ) : null}
 
       {/* Playback Controls */}
       <View style={styles.controlsRow}>
         <Pressable
-          onPress={prevTrack}
+          onPress={() => seekTo(0)}
           disabled={!hasTrack}
           style={styles.controlBtn}
-          accessibilityLabel="Piste précédente"
+          accessibilityLabel="Recommencer depuis le début"
         >
           <Ionicons name="play-skip-back" size={28} color={hasTrack ? Colors.textSecondary : Colors.surface} />
         </Pressable>
@@ -140,15 +140,6 @@ export default function PlayerScreen() {
           accessibilityLabel="Avancer de 30 secondes"
         >
           <MaterialCommunityIcons name="fast-forward-30" size={32} color={hasTrack ? Colors.textPrimary : Colors.surface} />
-        </Pressable>
-
-        <Pressable
-          onPress={nextTrack}
-          disabled={!hasTrack}
-          style={styles.controlBtn}
-          accessibilityLabel="Piste suivante"
-        >
-          <Ionicons name="play-skip-forward" size={28} color={hasTrack ? Colors.textSecondary : Colors.surface} />
         </Pressable>
       </View>
 
@@ -259,7 +250,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 4,
   },
-  trackArtist: {
+  trackHint: {
     color: Colors.textSecondary,
     fontSize: 16,
     textAlign: 'center',
@@ -313,18 +304,19 @@ const styles = StyleSheet.create({
   },
   timerLabel: {
     color: Colors.textTertiary,
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     letterSpacing: 1,
-    marginBottom: Spacing.xs,
+    marginBottom: Spacing.sm,
   },
   timerDisplay: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
   },
   timerValue: {
     color: Colors.primary,
-    fontSize: 36,
+    fontSize: 28,
     fontWeight: '700',
   },
   modalOverlay: {
@@ -341,24 +333,27 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     color: Colors.textPrimary,
-    fontSize: 18,
+    fontSize: 24,
     fontWeight: '700',
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.lg,
+    textAlign: 'center',
   },
   timerOption: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 14,
+    paddingVertical: 22,
+    paddingHorizontal: Spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: Colors.surface,
   },
   timerOptionText: {
     color: Colors.textPrimary,
-    fontSize: 16,
+    fontSize: 28,
+    fontWeight: '500',
   },
   timerOptionActive: {
     color: Colors.primary,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 });

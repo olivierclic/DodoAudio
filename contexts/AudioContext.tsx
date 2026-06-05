@@ -12,6 +12,14 @@ import { AppState, AppStateStatus, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS } from '../constants/storage';
 import { useSettings } from './SettingsContext';
+import { isIdbUri, resolveToBlobUrl } from '../services/fileStore';
+
+async function resolvePlayableUri(uri: string): Promise<string | null> {
+  if (Platform.OS === 'web' && isIdbUri(uri)) {
+    return await resolveToBlobUrl(uri);
+  }
+  return uri;
+}
 
 let MediaControl: any = null;
 let MediaCommand: any = null;
@@ -273,7 +281,12 @@ export function AudioProvider({ children }: { children: ReactNode }) {
           AsyncStorage.getItem(STORAGE_KEYS.LIBRARY),
           AsyncStorage.getItem(STORAGE_KEYS.PLAYBACK_STATE),
         ]);
-        const lib: Track[] = libRaw ? JSON.parse(libRaw) ?? [] : [];
+        const rawLib: Track[] = libRaw ? JSON.parse(libRaw) ?? [] : [];
+        // On web, drop tracks with stale blob: URIs (they don't survive reload)
+        const lib =
+          Platform.OS === 'web'
+            ? rawLib.filter((t) => t?.uri && !t.uri.startsWith('blob:'))
+            : rawLib;
         setPlaylist(lib);
 
         if (stateRaw) {
@@ -307,8 +320,13 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         await soundRef.current.unloadAsync().catch(() => {});
         soundRef.current = null;
       }
+      const playableUri = await resolvePlayableUri(track.uri);
+      if (!playableUri) {
+        console.warn('Track URI cannot be resolved:', track.uri);
+        return;
+      }
       const { sound } = await Audio.Sound.createAsync(
-        { uri: track.uri },
+        { uri: playableUri },
         {
           shouldPlay: autoPlay,
           positionMillis: initialPosition,
@@ -402,8 +420,13 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         await soundRef.current.unloadAsync().catch(() => {});
         soundRef.current = null;
       }
+      const playableUri = await resolvePlayableUri(track.uri);
+      if (!playableUri) {
+        console.warn('Track URI cannot be resolved:', track.uri);
+        return;
+      }
       const { sound } = await Audio.Sound.createAsync(
-        { uri: track.uri },
+        { uri: playableUri },
         {
           shouldPlay: autoPlay,
           positionMillis: 0,
