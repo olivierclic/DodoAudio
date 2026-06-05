@@ -398,6 +398,73 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     await seekTo(newPos);
   }, [seekTo]);
 
+  // Web MediaSession API — lock screen, notification, and Bluetooth headset
+  // controls. Maps:
+  //   - play / pause buttons → play() / pause()
+  //   - previous track / first BT button press → seekTo(0) (restart from beginning)
+  //   - lock screen scrubber → seekTo(ms)
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    if (typeof navigator === 'undefined' || !('mediaSession' in navigator)) return;
+    const ms = navigator.mediaSession;
+    try {
+      ms.setActionHandler('play', () => { play().catch(() => {}); });
+      ms.setActionHandler('pause', () => { pause().catch(() => {}); });
+      ms.setActionHandler('previoustrack', () => { seekTo(0).catch(() => {}); });
+      ms.setActionHandler('seekto', (details: any) => {
+        if (details?.seekTime != null) seekTo(details.seekTime * 1000).catch(() => {});
+      });
+    } catch {}
+    return () => {
+      try {
+        ms.setActionHandler('play', null);
+        ms.setActionHandler('pause', null);
+        ms.setActionHandler('previoustrack', null);
+        ms.setActionHandler('seekto', null);
+      } catch {}
+    };
+  }, [play, pause, seekTo]);
+
+  // MediaSession metadata (lock screen display: title, artist, artwork)
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof navigator === 'undefined' || !('mediaSession' in navigator)) return;
+    try {
+      if (!currentTrack) {
+        navigator.mediaSession.metadata = null;
+        return;
+      }
+      const artwork = currentTrack.artworkUri ? [{ src: currentTrack.artworkUri }] : [];
+      navigator.mediaSession.metadata = new (window as any).MediaMetadata({
+        title: currentTrack.name || 'Sans titre',
+        artist: currentTrack.artist || 'Dodo Audio',
+        artwork,
+      });
+    } catch {}
+  }, [currentTrack]);
+
+  // MediaSession playback state — controls the play/pause icon shown on
+  // lock screen and notification
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof navigator === 'undefined' || !('mediaSession' in navigator)) return;
+    try {
+      navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+    } catch {}
+  }, [isPlaying]);
+
+  // MediaSession position state — drives the lock screen scrubber
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof navigator === 'undefined' || !('mediaSession' in navigator)) return;
+    if (!('setPositionState' in navigator.mediaSession)) return;
+    if (!durationMs) return;
+    try {
+      (navigator.mediaSession as any).setPositionState({
+        duration: durationMs / 1000,
+        position: Math.min(positionMs, durationMs) / 1000,
+        playbackRate: playbackSpeed || 1.0,
+      });
+    } catch {}
+  }, [positionMs, durationMs, playbackSpeed]);
+
   // Internal functions for media control callbacks (avoid stale closures)
   const _nextTrackInternal = () => {
     const pl = playlistRef.current ?? [];

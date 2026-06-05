@@ -80,7 +80,16 @@ GitHub Pages héberge à `https://olivierclic.github.io/DodoAudio/` (sous-chemin
 ### 6. `.nojekyll` — bypass Jekyll
 GitHub Pages utilise Jekyll par défaut, qui **ignore les dossiers commençant par `_`** (comme `_expo/` qui contient le bundle JS). Un fichier `.nojekyll` à la racine de `gh-pages` désactive ce comportement.
 
-### 7. Limitations iOS connues (non contournées)
+### 7. Contrôles externes — API MediaSession (v1.2.0+)
+Sur web, expo-av ne sait pas piloter les contrôles du système d'exploitation. L'API web `navigator.mediaSession` est utilisée à la place pour exposer :
+- **Play / Pause** depuis l'écran de verrouillage, la notification (Android), ou les boutons média Bluetooth
+- **Retour au début** (mapped sur `previoustrack` — bouton « précédent » des casques BT)
+- **Scrub** depuis la barre de progression du lock screen
+- **Métadonnées** (titre, artiste, pochette) affichées dans la notif / centre de contrôle
+
+L'implémentation est dans `contexts/AudioContext.tsx`. Sur native, c'est `expo-media-control` qui prend le relais.
+
+### 8. Limitations iOS connues (non contournées)
 - **Volume programmatique** — Safari iOS ignore `audio.volume = x`. Les contrôles se font uniquement par les boutons physiques de l'iPhone. Le slider de volume a été retiré des paramètres avec un message explicatif.
 
 ---
@@ -180,6 +189,41 @@ git worktree remove ../wt --force
 ```
 
 GitHub Pages est configuré pour servir la racine de `gh-pages`. L'URL finale est `https://olivierclic.github.io/DodoAudio/`.
+
+---
+
+## Compatibilité Android
+
+**L'app fonctionne déjà sur Android sans aucune modification.** Le code n'a rien d'iOS-spécifique au sens strict : tout ce qui a été fait pour contourner les limitations Safari iOS (Service Worker comme serveur HTTP virtuel, IndexedDB, etc.) fonctionne aussi sur Android Chrome — et celui-ci a en réalité un meilleur support PWA que Safari.
+
+### Différences iOS vs Android (sans rien changer au code)
+
+| Aspect | iOS Safari | Android Chrome |
+|--------|-----------|----------------|
+| Installation PWA | Manuel via « Partager → Sur l'écran d'accueil » | Bannière automatique « Installer l'app » |
+| Audio en arrière-plan | Limité, peut s'interrompre | Continue tant que la PWA tourne |
+| Service Worker | Quelques bugs historiques | Robuste |
+| HTTP Range / seek | Bug nécessitant le SW virtuel | Marche partout nativement |
+| `audio.volume` programmatique | **Bloqué par Apple** | **Fonctionne** |
+| Meta tags `apple-mobile-web-app-*` | Utilisés | Ignorés silencieusement |
+| Contrôles via API MediaSession | Centre de contrôle iOS | Notification, écran verrouillé, casque Bluetooth |
+
+### Code iOS-spécifique présent dans le projet
+
+Le code reste portable. Les seuls éléments propres à iOS :
+
+1. **`isIOSWeb` dans `settings.tsx`** — détection user-agent pour adapter l'UI volume (sans effet sur Android)
+2. **Meta tags `apple-mobile-web-app-*`** dans `index.html` — ignorés par Android
+3. **Service Worker Range server** — créé pour iOS, mais **bénéficie aussi à Android** (mêmes URLs, même fonctionnement)
+
+### Améliorations spécifiques Android (optionnelles)
+
+| Amélioration | Effort | Bénéfice |
+|--------------|--------|----------|
+| Réactiver le slider de volume sur non-iOS | 5 min | Slider fonctionnel sur Android |
+| Hook `beforeinstallprompt` | 15 min | Bouton « Installer » dans l'app |
+
+L'API MediaSession (contrôles lock screen + Bluetooth) est **déjà implémentée depuis v1.2.0**.
 
 ---
 

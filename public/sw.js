@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dodo-audio-v12';
+const CACHE_NAME = 'dodo-audio-v13';
 const BASE = '/DodoAudio';
 const AUDIO_PREFIX = BASE + '/api/audio/';
 
