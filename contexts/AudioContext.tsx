@@ -12,27 +12,14 @@ import { AppState, AppStateStatus, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS } from '../constants/storage';
 import { useSettings } from './SettingsContext';
-import { isIdbUri, resolveToBlobUrl } from '../services/fileStore';
-import { WebAudioSound } from '../services/webAudioPlayer';
+import { isIdbUri, resolveToPlayableUrl } from '../services/fileStore';
 
 async function resolvePlayableUri(uri: string): Promise<string | null> {
   if (Platform.OS === 'web' && isIdbUri(uri)) {
-    return await resolveToBlobUrl(uri);
+    // Use the SW-served URL (with Range support) so seek works on iOS Safari
+    return await resolveToPlayableUrl(uri);
   }
   return uri;
-}
-
-// Unified factory: WebAudio on browsers (real seek + volume on iOS Safari),
-// expo-av on native.
-async function createPlayableSound(
-  uri: string,
-  initialStatus: any,
-  onStatus: (s: AVPlaybackStatus) => void
-) {
-  if (Platform.OS === 'web') {
-    return await WebAudioSound.createAsync({ uri }, initialStatus, onStatus as any);
-  }
-  return await Audio.Sound.createAsync({ uri }, initialStatus, onStatus);
 }
 
 let MediaControl: any = null;
@@ -78,6 +65,7 @@ interface AudioContextType {
   setPlaylist: (tracks: Track[]) => void;
   setSleepTimer: (minutes: number) => void;
   loaded: boolean;
+  trackLoading: boolean;
 }
 
 const AudioContext = createContext<AudioContextType>({
@@ -100,6 +88,7 @@ const AudioContext = createContext<AudioContextType>({
   setPlaylist: () => {},
   setSleepTimer: () => {},
   loaded: false,
+  trackLoading: false,
 });
 
 export const useAudio = () => useContext(AudioContext);
@@ -115,6 +104,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const [sleepTimerRemaining, setSleepTimerRemaining] = useState(0);
   const [sleepTimerDuration, setSleepTimerDuration] = useState(15);
   const [loaded, setLoaded] = useState(false);
+  const [trackLoading, setTrackLoading] = useState(false);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isPlayingRef = useRef(false);
@@ -329,6 +319,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   }, [savePlaybackState]);
 
   const _loadSound = useCallback(async (track: Track, autoPlay: boolean = false, initialPosition: number = 0) => {
+    setTrackLoading(true);
     try {
       if (soundRef.current) {
         await soundRef.current.unloadAsync().catch(() => {});
@@ -337,10 +328,11 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       const playableUri = await resolvePlayableUri(track.uri);
       if (!playableUri) {
         console.warn('Track URI cannot be resolved:', track.uri);
+        setTrackLoading(false);
         return;
       }
-      const { sound } = await createPlayableSound(
-        playableUri,
+      const { sound } = await Audio.Sound.createAsync(
+        { uri: playableUri },
         {
           shouldPlay: autoPlay,
           positionMillis: initialPosition,
@@ -350,7 +342,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         },
         onPlaybackStatusUpdate
       );
-      soundRef.current = sound as any;
+      soundRef.current = sound;
       setCurrentTrack(track);
       setPositionMs(initialPosition);
       if (autoPlay) {
@@ -358,6 +350,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       }
     } catch (e) {
       console.warn('Failed to load audio:', e);
+    } finally {
+      setTrackLoading(false);
     }
   }, [playbackSpeed, volume, onPlaybackStatusUpdate, sleepTimerDuration]);
 
@@ -429,6 +423,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
   // Imperative load that doesn't depend on callback closures
   const _loadSoundImperative = async (track: Track, autoPlay: boolean) => {
+    setTrackLoading(true);
     try {
       if (soundRef.current) {
         await soundRef.current.unloadAsync().catch(() => {});
@@ -437,10 +432,11 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       const playableUri = await resolvePlayableUri(track.uri);
       if (!playableUri) {
         console.warn('Track URI cannot be resolved:', track.uri);
+        setTrackLoading(false);
         return;
       }
-      const { sound } = await createPlayableSound(
-        playableUri,
+      const { sound } = await Audio.Sound.createAsync(
+        { uri: playableUri },
         {
           shouldPlay: autoPlay,
           positionMillis: 0,
@@ -450,7 +446,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         },
         onPlaybackStatusUpdate
       );
-      soundRef.current = sound as any;
+      soundRef.current = sound;
       setCurrentTrack(track);
       setPositionMs(0);
       if (autoPlay) {
@@ -458,6 +454,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       }
     } catch (e) {
       console.warn('Failed to load audio:', e);
+    } finally {
+      setTrackLoading(false);
     }
   };
 
@@ -504,6 +502,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         setPlaylist,
         setSleepTimer,
         loaded,
+        trackLoading,
       }}
     >
       {children}

@@ -70,8 +70,20 @@ export function isIdbUri(uri: string): boolean {
   return typeof uri === 'string' && uri.startsWith(IDB_PREFIX);
 }
 
-// Resolve an idb:// URI to a playable blob URL.
-// The caller is responsible for revoking the returned URL when no longer needed.
+// Resolve an idb:// URI to a real HTTP URL served by the Service Worker.
+// Returns a URL like /DodoAudio/api/audio/<id> which the SW intercepts and
+// streams from IDB with full HTTP Range support — required for HTMLAudioElement
+// to seek correctly on iOS Safari.
+const SW_AUDIO_PREFIX = '/DodoAudio/api/audio/';
+
+export async function resolveToPlayableUrl(uri: string): Promise<string | null> {
+  if (!uri.startsWith(IDB_PREFIX)) return null;
+  // Optimistic: trust the id without checking IDB to keep play() fast.
+  const id = uri.slice(IDB_PREFIX.length);
+  return SW_AUDIO_PREFIX + encodeURIComponent(id);
+}
+
+// Kept for backwards compat / debug — returns a blob URL (no range support).
 export async function resolveToBlobUrl(uri: string): Promise<string | null> {
   const blob = await getFileBlob(uri);
   if (!blob) return null;

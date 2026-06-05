@@ -24,9 +24,10 @@ import { saveFile, deleteFile, isIdbUri } from '../../services/fileStore';
 export default function LibraryScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { currentTrack, isPlaying, loadTrack, setPlaylist, playlist } = useAudio();
+  const { currentTrack, isPlaying, loadTrack, setPlaylist, playlist, trackLoading } = useAudio();
   const [tracks, setTracks] = useState<Track[]>(playlist ?? []);
   const [importing, setImporting] = useState(false);
+  const [libLoading, setLibLoading] = useState(true);
 
   useEffect(() => {
     setTracks(playlist ?? []);
@@ -50,6 +51,7 @@ export default function LibraryScreen() {
           AsyncStorage.setItem(STORAGE_KEYS.LIBRARY, JSON.stringify(valid)).catch(() => {});
         }
       } catch {}
+      setLibLoading(false);
     })();
   }, [setPlaylist]);
 
@@ -193,7 +195,12 @@ export default function LibraryScreen() {
       </View>
 
       {/* File List */}
-      {(tracks?.length ?? 0) === 0 ? (
+      {libLoading ? (
+        <View style={styles.emptyState}>
+          <ActivityIndicator size="large" color={Colors.primary} />
+          <Text style={styles.emptyTitle}>Chargement de la bibliothèque…</Text>
+        </View>
+      ) : (tracks?.length ?? 0) === 0 ? (
         <View style={styles.emptyState}>
           <Ionicons name="folder-open" size={64} color={Colors.textTertiary} />
           <Text style={styles.emptyTitle}>Aucun fichier audio</Text>
@@ -211,6 +218,16 @@ export default function LibraryScreen() {
           contentContainerStyle={{ paddingBottom: 32 }}
           showsVerticalScrollIndicator={false}
         />
+      )}
+
+      {/* Overlay loader when a track is being decoded/loaded */}
+      {trackLoading && (
+        <View style={styles.trackLoadingOverlay} pointerEvents="auto">
+          <View style={styles.trackLoadingBox}>
+            <ActivityIndicator size="large" color={Colors.primary} />
+            <Text style={styles.trackLoadingText}>Chargement du morceau…</Text>
+          </View>
+        </View>
       )}
     </View>
   );
@@ -326,5 +343,30 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  trackLoadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  trackLoadingBox: {
+    backgroundColor: Colors.card,
+    borderRadius: BorderRadius.lg,
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.lg,
+    alignItems: 'center',
+    minWidth: 200,
+    borderWidth: 1,
+    borderColor: Colors.surface,
+  },
+  trackLoadingText: {
+    color: Colors.textPrimary,
+    fontSize: 14,
+    marginTop: Spacing.sm,
   },
 });
