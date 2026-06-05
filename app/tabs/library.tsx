@@ -39,19 +39,23 @@ export default function LibraryScreen() {
     (async () => {
       try {
         const raw = await AsyncStorage.getItem(STORAGE_KEYS.LIBRARY);
-        if (!raw) return;
-        const lib: Track[] = JSON.parse(raw) ?? [];
-        const valid =
-          Platform.OS === 'web'
-            ? lib.filter((t) => t?.uri && !t.uri.startsWith('blob:'))
-            : lib;
-        setTracks(valid);
-        setPlaylist(valid);
-        if (valid.length !== lib.length) {
-          AsyncStorage.setItem(STORAGE_KEYS.LIBRARY, JSON.stringify(valid)).catch(() => {});
+        if (raw) {
+          const lib: Track[] = JSON.parse(raw) ?? [];
+          const valid =
+            Platform.OS === 'web'
+              ? lib.filter((t) => t?.uri && !t.uri.startsWith('blob:'))
+              : lib;
+          setTracks(valid);
+          setPlaylist(valid);
+          if (valid.length !== lib.length) {
+            AsyncStorage.setItem(STORAGE_KEYS.LIBRARY, JSON.stringify(valid)).catch(() => {});
+          }
         }
       } catch {}
-      setLibLoading(false);
+      finally {
+        // Always clear the loader, even when storage is empty (first launch).
+        setLibLoading(false);
+      }
     })();
   }, [setPlaylist]);
 
