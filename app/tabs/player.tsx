@@ -83,7 +83,7 @@ export default function PlayerScreen() {
       {/* Album Art */}
       <View style={styles.artContainer}>
         {artworkSource ? (
-          <Image source={artworkSource} style={styles.artwork} />
+          <Image source={artworkSource} style={styles.artwork} resizeMode="contain" />
         ) : (
           <View style={[styles.artwork, styles.artPlaceholder]}>
             <Ionicons name="musical-notes" size={80} color={Colors.textTertiary} />
@@ -239,6 +239,7 @@ const styles = StyleSheet.create({
     width: 260,
     height: 260,
     borderRadius: BorderRadius.lg,
+    backgroundColor: Colors.card,
   },
   artPlaceholder: {
     backgroundColor: Colors.card,
