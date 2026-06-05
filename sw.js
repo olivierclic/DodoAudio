@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dodo-audio-v4';
+const CACHE_NAME = 'dodo-audio-v5';
 const BASE = '/DodoAudio';
 
 const PRECACHE_URLS = [
@@ -8,6 +8,7 @@ const PRECACHE_URLS = [
   BASE + '/favicon.ico',
   BASE + '/assets/icon.png',
   BASE + '/assets/favicon.png',
+  BASE + '/lib/jsmediatags.min.js',
 ];
 
 self.addEventListener('install', (event) => {
