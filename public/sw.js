@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dodo-audio-v15';
+const CACHE_NAME = 'dodo-audio-v16';
 const BASE = '/DodoAudio';
 const AUDIO_PREFIX = BASE + '/api/audio/';
 
@@ -105,9 +105,13 @@ self.addEventListener('fetch', (event) => {
   }
 
   if (event.request.mode === 'navigate') {
+    // Cache-first: serve the precached index.html immediately without ever
+    // touching the network when it's available. A network-first strategy here
+    // triggers iOS's "you're in Airplane Mode, enable Wi-Fi" system popup on
+    // every launch, since the OS sees a network request fail while offline.
     event.respondWith(
-      fetch(event.request).catch(() =>
-        caches.match(BASE + '/index.html').then((cached) => cached || new Response('Offline', { status: 503 }))
+      caches.match(BASE + '/index.html').then((cached) =>
+        cached || fetch(event.request).catch(() => new Response('Offline', { status: 503 }))
       )
     );
     return;
